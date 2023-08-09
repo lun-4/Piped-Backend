@@ -17,6 +17,8 @@ import me.kavin.piped.utils.resp.VideoResolvedResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.schabi.newpipe.extractor.ListExtractor;
+import org.schabi.newpipe.extractor.MediaFormat;
+import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
@@ -51,7 +53,17 @@ public class StreamHandlers {
             Sentry.setExtra("videoId", videoId);
             ITransaction transaction = Sentry.startTransaction("StreamInfo fetch", "fetch");
             try {
-                return StreamInfo.getInfo("https://www.youtube.com/watch?v=" + videoId);
+                final String url = "https://www.youtube.com/watch?v=" + videoId;
+                // this is hacky, but we need the extractor.
+                final var service = NewPipe.getServiceByUrl(url);
+                final var extractor = service.getStreamExtractor(url);
+                var info = StreamInfo.getInfo(extractor);
+                try {
+                    info.setSubtitles(extractor.getSubtitles(MediaFormat.VTT));
+                } catch (final Exception e) {
+                    info.addError(e);
+                }
+                return info;
             } catch (Exception e) {
                 if (e instanceof GeographicRestrictionException) {
                     return null;
