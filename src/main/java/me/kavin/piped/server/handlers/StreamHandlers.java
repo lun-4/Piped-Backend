@@ -16,8 +16,12 @@ import me.kavin.piped.utils.resp.InvalidRequestResponse;
 import me.kavin.piped.utils.resp.VideoResolvedResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.Nullable;
 import org.schabi.newpipe.extractor.ListExtractor;
+<<<<<<< HEAD
 import org.schabi.newpipe.extractor.MediaFormat;
+=======
+>>>>>>> luna/expose-audio-config
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
@@ -25,12 +29,13 @@ import org.schabi.newpipe.extractor.comments.CommentsInfoItem;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.GeographicRestrictionException;
 import org.schabi.newpipe.extractor.stream.Description;
+import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.Field;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -45,6 +50,15 @@ import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.prepareDesktopJsonBuilder;
 
 public class StreamHandlers {
+    private static class MoreInfo {
+        StreamInfo info;
+        JsonObject audioConfig;
+
+        public MoreInfo(StreamInfo info, JsonObject audioConfig) {
+            this.info = info;
+            this.audioConfig = audioConfig;
+        }
+    }
     public static byte[] streamsResponse(String videoId) throws Exception {
 
         Sentry.setExtra("videoId", videoId);
@@ -63,7 +77,8 @@ public class StreamHandlers {
                 } catch (final Exception e) {
                     info.addError(e);
                 }
-                return info;
+                JsonObject audioConfig = getAudioConfig(extractor);
+                return new MoreInfo(info, audioConfig);
             } catch (Exception e) {
                 if (e instanceof GeographicRestrictionException) {
                     return null;
@@ -137,11 +152,13 @@ public class StreamHandlers {
             return null;
         });
 
+        MoreInfo moreInfo = null;
         StreamInfo info = null;
         Throwable exception = null;
 
         try {
-            info = futureStream.get(10, TimeUnit.SECONDS);
+            moreInfo = futureStream.get(10, TimeUnit.SECONDS);
+            info = moreInfo.info;
         } catch (ExecutionException e) {
             exception = e.getCause();
             if (
@@ -253,6 +270,7 @@ public class StreamHandlers {
         }
 
         Streams streams = CollectionUtils.collectStreamInfo(info);
+        streams.audioConfig = moreInfo.audioConfig;
 
         String lbryURL = null;
 
@@ -321,6 +339,20 @@ public class StreamHandlers {
 
         return mapper.writeValueAsBytes(streams);
 
+    }
+
+    @Nullable
+    private static JsonObject getAudioConfig(StreamExtractor extractor) throws NoSuchFieldException, IllegalAccessException {
+        Field f = extractor.getClass().getDeclaredField("playerResponse");
+        f.setAccessible(true);
+        Object reflectedPlayerResponse = f.get(extractor);
+        JsonObject playerResponse = (JsonObject)reflectedPlayerResponse;
+        JsonObject playerConfig = (JsonObject)playerResponse.get("playerConfig");
+        JsonObject audioConfig = null;
+        if (playerConfig != null) {
+            audioConfig = (JsonObject) playerConfig.get("audioConfig");
+        }
+        return audioConfig;
     }
 
     public static byte[] resolveClipId(String clipId) throws Exception {
