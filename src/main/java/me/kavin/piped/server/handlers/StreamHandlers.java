@@ -18,10 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.Nullable;
 import org.schabi.newpipe.extractor.ListExtractor;
-<<<<<<< HEAD
 import org.schabi.newpipe.extractor.MediaFormat;
-=======
->>>>>>> luna/expose-audio-config
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.comments.CommentsInfo;
