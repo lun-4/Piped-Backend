@@ -1,9 +1,11 @@
 package me.kavin.piped.utils.obj;
 
+import com.grack.nanojson.JsonObject;
 import lombok.NoArgsConstructor;
 import me.kavin.piped.consts.Constants;
 
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class Streams {
@@ -32,6 +34,7 @@ public class Streams {
     public List<ChapterSegment> chapters;
 
     public List<PreviewFrames> previewFrames;
+    public JsonObject audioConfig;
 
     public Streams(String title, String description, String uploadDate, String uploader, String uploaderUrl,
                    String uploaderAvatar, String thumbnailUrl, long duration, long views, long likes, long dislikes, long uploaderSubscriberCount,
