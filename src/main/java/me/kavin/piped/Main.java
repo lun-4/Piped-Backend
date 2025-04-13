@@ -13,6 +13,7 @@ import me.kavin.piped.utils.obj.db.PlaylistVideo;
 import me.kavin.piped.utils.obj.db.PubSub;
 import me.kavin.piped.utils.obj.db.Video;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
@@ -45,6 +46,8 @@ public class Main {
         ReqwestUtils.init(REQWEST_PROXY, REQWEST_PROXY_USER, REQWEST_PROXY_PASS);
 
         NewPipe.init(new DownloaderImpl(), new Localization("en", "US"), ContentCountry.DEFAULT);
+        if (!StringUtils.isEmpty(Constants.BG_HELPER_URL))
+            YoutubeStreamExtractor.setPoTokenProvider(new BgPoTokenProvider(Constants.BG_HELPER_URL));
         YoutubeParsingHelper.setConsentAccepted(CONSENT_COOKIE);
 
         // Warm up the extractor
@@ -83,7 +86,7 @@ public class Main {
             System.exit(1);
         }
 
-        Multithreading.runAsync(() ->  Thread.ofVirtual().start(new SyncRunner(
+        Multithreading.runAsync(() -> Thread.ofVirtual().start(new SyncRunner(
                 new OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build(),
                 MATRIX_SERVER,
                 MatrixHelper.MATRIX_TOKEN)
